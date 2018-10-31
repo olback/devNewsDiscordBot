@@ -1,0 +1,27 @@
+{
+  "name": "devnews",
+  "version": "1.0.0",
+  "description": "This bot handles the posting of new rants on devRant under the username devNews.",
+  "main": "out/index.js",
+  "author": "olback",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "clean": "rm -rf out/",
+    "build": "tsc -p ./",
+    "watch": "yarn build --watch",
+    "dev": "node devserver"
+  },
+  "dependencies": {
+    "discord.js": "^11.4.2",
+    "dotenv": "^6.1.0",
+    "rantscript": "^1.4.0"
+  },
+  "devDependencies": {
+    "@types/dotenv": "^4.0.3",
+    "@types/node": "^10.12.1",
+    "concurrently": "^4.0.1",
+    "nodemon": "^1.18.5",
+    "typescript": "^3.1.4"
+  }
+}
