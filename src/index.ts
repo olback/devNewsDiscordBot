@@ -6,6 +6,7 @@ import * as rantscript from 'rantscript';
 interface Post {
     msg: Discord.Message;
     tags: string[];
+    img: string;
 }
 
 dotenv.load({ path: '.env' }); // Load .env
@@ -82,20 +83,21 @@ client.on('message', msg => {
 
                 lastPost = {
                     msg: msg,
-                    tags: []
+                    tags: [],
+                    img: ''
                 }
 
-                msg.channel.send(`New article started.\nAdd tags with \`${cmdPrefix} tags <tag1> <tag2>...\`.\nPost to devRant with \`${cmdPrefix} add\``);
+                msg.reply(`New article started.\nAdd tags with \`${cmdPrefix} tags <tag1> <tag2>...\`.\nPost to devRant with \`${cmdPrefix} add\``);
 
             } else { // Else, respond with error
 
                 if (msg.content.length >= Number(env.MIN_POST_LENGTH)) {
 
-                    msg.channel.send('This post seems a little long.');
+                    msg.reply('This post seems a little long.');
 
                 } else {
 
-                    msg.channel.send('This post seems a little short.');
+                    msg.reply('This post seems a little short.');
 
                 }
 
@@ -113,36 +115,36 @@ function command(cmd: string, args: string[], msg: Discord.Message) {
 
         case 'publish':
             if (posts.length > 10) {
-                msg.channel.send('You may not add more articles right now. There are already 10 scheduled for release.');
+                msg.reply('You may not add more articles right now. There are already 10 scheduled for release.');
                 return;
             }
 
             if (lastPost) {
                 posts.push(lastPost);
-                msg.channel.send(`"${lastPost.msg.content.substring(0, 15)}..." has been added to the waitlist.`);
+                msg.reply(`"${lastPost.msg.content.substring(0, 15)}..." has been added to the waitlist.`);
                 lastPost = null;
             } else {
-                msg.channel.send('No article to publish');
+                msg.reply('No article to publish');
             }
             break;
 
         case 'length':
-            msg.channel.send(`There are currently ${posts.length} news articles waiting to be posted to devRant.`);
+            msg.reply(`There are currently ${posts.length} news articles waiting to be posted to devRant.`);
             break;
 
         case 'show':
             if (args[0] === 'current' && lastPost) {
 
                 console.log(lastPost.msg.content);
-                msg.channel.send(`As requested, here is the current article:\n\`\`\`${lastPost.msg.content}\n\nTags: ${lastPost.tags.join(', ')}\`\`\``)
+                msg.reply(`As requested, here is the current article:\n\`\`\`${lastPost.msg.content}\n\nTags: ${lastPost.tags.join(', ')}\nImage: ${lastPost.img}\`\`\``)
 
             } else {
 
                 const post = posts[Number(args[0]) - 1];
                 if (post) {
-                    msg.channel.send(`As requested, here is article ${Number(args[0])}:\n\`\`\`${post.msg.content}\n\nTags: ${post.tags.join(', ')}\`\`\``);
+                    msg.reply(`As requested, here is article ${Number(args[0])}:\n\`\`\`${post.msg.content}\n\nTags: ${post.tags.join(', ')}\nImage: ${post.img}\`\`\``);
                 } else {
-                    msg.channel.send('Article does not exist.');
+                    msg.reply('Article does not exist.');
                 }
 
             }
@@ -151,23 +153,38 @@ function command(cmd: string, args: string[], msg: Discord.Message) {
         case 'tags':
             if (lastPost) {
                 lastPost.tags = args.filter(t => t.trim()).map(t => t.replace(',', ''));
-                msg.channel.send(`Added tags: ${lastPost.tags.join(', ')}.`);
+                msg.reply(`Added tags: ${lastPost.tags.join(', ')}.`);
             } else {
-                msg.channel.send('Article does not exist.');
+                msg.reply('Article does not exist.');
+            }
+            break;
+
+        case 'image':
+            if (lastPost) {
+                if (msg.attachments.array().length > 0) {
+                    console.log(msg.attachments.array()[0].url);
+                    lastPost.img = msg.attachments.array()[0].url;
+                    console.log(lastPost.img);
+                    msg.reply('Image attatched');
+                } else {
+                    msg.reply('No image attatched.');
+                }
+            } else {
+                msg.reply('Article does not exist.');
             }
             break;
 
         case 'reset':
             lastPost = null;
-            msg.channel.send('Current article deleted.');
+            msg.reply('Current article deleted.');
             break;
 
         case 'help':
-            msg.channel.send(helpText());
+            msg.reply(helpText());
             break
 
         default:
-            msg.channel.send(`Unknown command. \`${cmdPrefix} help\` for more help.`);
+            msg.reply(`Unknown command. \`${cmdPrefix} help\` for more help.`);
 
     }
 
@@ -187,28 +204,26 @@ setInterval(() => {
         console.log(post.msg.content);
 
         // Get authentication token from devRant API
-        rantscript
-            .login(String(env.DEVRANT_USENAME), String(env.DEVRANT_PASSWORD))
-            .then(response => {
-                //Then post a rant to devRant with token gotten from previous request.
-                rantscript.postRant(
-                    post.msg.content,
-                    post.tags.join(','),
-                    Number(env.DEVRANT_POST_CATEGORY || 6),
-                    response.auth_token,
-                    null
-                ).then(resp => {
-                    //Then console.log the rant data.
-                    posts.shift();
-                    sendMessage(`Posted article to devRant! Rant ID: ${resp.rant_id}.`);
-                }).catch(e => {
-                    console.error(e);
-                    sendMessage('Something went wrong when posting article to devRant!');
-                });
-            }).catch(e => {
-                console.error(e);
-                sendMessage('Something went wrong when posting article to devRant!');
-            });
+        // rantscript
+        //     .login(String(env.DEVRANT_USENAME), String(env.DEVRANT_PASSWORD))
+        //     .then(response => {
+        //         rantscript.postRant(
+        //             post.msg.content,
+        //             post.tags.join(','),
+        //             Number(env.DEVRANT_POST_CATEGORY || 6),
+        //             response.auth_token,
+        //             null
+        //         ).then(resp => {
+        //             posts.shift();
+        //             sendMessage(`Posted article to devRant! Rant ID: ${resp.rant_id}.`);
+        //         }).catch(e => {
+        //             console.error(e);
+        //             sendMessage('Something went wrong when posting article to devRant!');
+        //         });
+        //     }).catch(e => {
+        //         console.error(e);
+        //         sendMessage('Something went wrong when posting article to devRant!');
+        //     });
 
     }
 

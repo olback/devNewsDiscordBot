@@ -21,8 +21,8 @@ concurrently([{
   },
   {
     command: `node_modules/.bin/nodemon --ext ${fsext.join(',')} ./out/index`,
-    name: 'Server',
-    prefixColor: ['white', 'bgGreen', 'bold']
+    name: 'Bot',
+    prefixColor: ['white', 'bgCyan', 'bold']
   }
 ], {
   prefix: 'name',
