@@ -199,7 +199,9 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 				const post = queue[Number(args[0]) - 1];
 
 				if (post) {
-					msg.reply(`as requested, here is post #${Number(args[0])}:\n\`\`\`${post.text}\n------\nTags: ${post.tags.join(', ')}\nImage: ${post.image}\`\`\``);
+					client.fetchUser(post.userID).then(user => {
+						msg.reply(`as requested, here is post #${Number(args[0])}:\n\`\`\`${post.text}\n------\nAuthor: @${user.username}\nTags: ${post.tags.join(', ')}\nImage: ${post.image}\`\`\``);
+					});
 				} else {
 					msg.reply('post does not exist.');
 				}
@@ -248,9 +250,12 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 			break;
 
 		case 'signature':
-			const newSignature = rawArgs;
+			let newSignature = rawArgs;
 
 			if (newSignature != '') {
+				// To use your devRant username in signature, prefix with u: instead of @
+				newSignature = newSignature.replace('u:', '@');
+
 				db.get('users')
 				  .find({ id: user.id })
 				  .set('signature', newSignature)
@@ -288,10 +293,11 @@ function tryPost () {
 	if (queue.length > 0) {
 		const post = queue[0];
 
-		const channel: Discord.Channel | undefined = client.channels.get(env.RELEASE_CHANNEL_ID || '');
+		const channel: Discord.TextChannel = client.channels.get(env.RELEASE_CHANNEL_ID || '');
 
 		if (channel === undefined) {
 			console.error('Channel with ID ' + env.RELEASE_CHANNEL_ID + ' not found. Please check!');
+			return;
 		}
 
 		// Get authentication token from devRant API
