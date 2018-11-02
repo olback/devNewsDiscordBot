@@ -15,6 +15,7 @@
   "dependencies": {
     "discord.js": "^11.4.2",
     "dotenv": "^6.1.0",
+    "download-to-file": "^2.1.0",
     "lowdb": "^1.0.0",
     "rantscript": "^1.4.0"
   },
