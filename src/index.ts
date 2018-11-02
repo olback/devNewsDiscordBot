@@ -6,6 +6,7 @@ import * as devRant from 'rantscript';
 import * as lowdb from 'lowdb';
 import * as FileSync from 'lowdb/adapters/FileSync';
 import * as download from 'download-to-file';
+import { Notifications } from './notifications';
 
 dotenv.load({ path: '.env' }); // Load .env
 
@@ -19,8 +20,11 @@ if (!fs.existsSync('./temp')) {
 const adapter = new FileSync('db.json');
 const db = lowdb(adapter);
 
-db.defaults({ users: [], queue: [] })
+db.defaults({ users: [], queue: [], lastNotifCheck: 0 })
   .write();
+
+var devRantToken: object = {};
+var notifications: Notifications;
 
 function helpText (queue) {
 	return `
@@ -282,11 +286,6 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 
 }
 
-// Connect to discord
-client.login(env.DISCORD_TOKEN)
-      .then(() => tryPost())
-      .catch(console.error);
-
 function tryPost () {
 	const queue = db.get('queue').value();
 
@@ -300,57 +299,47 @@ function tryPost () {
 			return;
 		}
 
-		// Get authentication token from devRant API
-		devRant.login(
-			String(env.DEVRANT_USERNAME),
-			String(env.DEVRANT_PASSWORD)
-		).then(tokenData => {
-			const postRant = function (filePath = false) {
-				// Post rant
-				devRant.postRant(
-					post.text,
-					post.tags.join(', '),
-					Number(env.DEVRANT_POST_CATEGORY || 6),
-					tokenData.auth_token,
-					(filePath || null)
-				).then(postData => {
-					if (postData.success) {
-						// Delete post in queue
-						db.get('queue')
-						  .shift()
-						  .write();
+		const postRant = function (filePath = false) {
+			// Post rant
+			devRant.postRant(
+				post.text,
+				post.tags.join(', '),
+				Number(env.DEVRANT_POST_CATEGORY || 6),
+				devRantToken,
+				(filePath || null)
+			).then(postData => {
+				if (postData.success) {
+					// Delete post in queue
+					db.get('queue')
+					  .shift()
+					  .write();
 
-						channel.send(`Posted article to devRant!\nLink: https://devrant.com/rants/${postData.rant_id}`)
-						       .catch(console.error);
+					channel.send(`Posted article to devRant!\nLink: https://devrant.com/rants/${postData.rant_id}`)
+					       .catch(console.error);
 
-						postSignature(post.userID, postData.rant_id, tokenData.auth_token);
-					} else if (!postData.error.startsWith('Right now you can only add')) {
-						db.get('queue')
-						  .shift()
-						  .write();
+					postSignature(post.userID, postData.rant_id);
+				} else if (!postData.error.startsWith('Right now you can only add')) {
+					db.get('queue')
+					  .shift()
+					  .write();
 
-						channel.send('Something went wrong while posting to devRant:\n```\n' + postData.error + '\n```\nPost got removed from the release-queue. Please publish it again!')
-						       .catch(console.error);
-					}
+					channel.send('Something went wrong while posting to devRant:\n```\n' + postData.error + '\n```\nPost got removed from the release-queue. Please publish it again!')
+					       .catch(console.error);
+				}
 
-				}).catch(console.error);
-			};
+			}).catch(console.error);
+		};
 
-			if (post.image != '') {
-				downloadFile(post.image, post.userID, function (err, filePath) {
-					if (err) console.error(err);
+		if (post.image != '') {
+			downloadFile(post.image, post.userID, function (err, filePath) {
+				if (err) console.error(err);
 
-					postRant(filePath);
-				});
-			} else {
-				postRant();
-			}
-		}).catch(() => {
-			console.error('Unable to log-in to devRant! Please check username/password!');
+				postRant(filePath);
+			});
+		} else {
+			postRant();
+		}
 
-			channel.send('Unable to log-in to devRant! Please check username/password!')
-			       .catch(console.error);
-		});
 
 	}
 }
@@ -371,16 +360,37 @@ function downloadFile (url, userID, callback) {
 	return download(url, filePath, callback);
 }
 
-function postSignature (userID, rantID, token) {
+function postSignature (userID, rantID) {
 	const signature = db
 		.get('users')
 		.find({ id: userID })
 		.get('signature')
 		.value();
 
-	devRant.postComment(signature, rantID, token)
+	devRant.postComment(signature, rantID, devRantToken)
 	       .catch(console.error);
 }
 
-// Execute tryPost every x minutes
-setTimeout(tryPost, Number(env.POST_FREQUENCY || 10) * 60 * 1000);
+// Login to devRant and connect to Discord
+devRant.login(
+	String(env.DEVRANT_USERNAME),
+	String(env.DEVRANT_PASSWORD)
+).then(tokenData => {
+	devRantToken = tokenData.auth_token;
+
+	notifications = new Notifications(client, devRant, devRantToken, env.NOTIF_CHANNEL_ID);
+
+	// Check for notifications
+	setInterval(() => notifications.check(), Number(env.NOTIF_FREQUENCY || 10) * 1000);
+
+	client.login(env.DISCORD_TOKEN)
+	      .then(() => {
+		      tryPost();
+
+		      // Execute tryPost every x minutes
+		      setInterval(tryPost, Number(env.POST_FREQUENCY || 10) * 60 * 1000);
+	      })
+	      .catch(console.error);
+}).catch(() => {
+	console.error('Unable to log-in to devRant! Please check username/password!');
+});
