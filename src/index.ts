@@ -20,7 +20,7 @@ if (!fs.existsSync('./temp')) {
 const adapter = new FileSync('db.json');
 const db = lowdb(adapter);
 
-db.defaults({ users: [], queue: [], lastNotifCheck: 0 })
+db.defaults({ users: [], queue: [] })
   .write();
 
 var devRantToken: object = {};

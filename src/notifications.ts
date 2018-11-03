@@ -25,10 +25,9 @@ export class Notifications {
 			const items = response.data.items;
 			const usernameMap = response.data.username_map;
 
-			for (let i = items.length-1; i >= 0; i--) {
+			for (let i = items.length - 1; i >= 0; i--) {
 				const item = items[i];
 				const uid = item.uid;
-				const username = usernameMap[uid.toString()].name;
 
 				// Skip read notifications
 				if (item.read == 1) continue;
@@ -36,10 +35,34 @@ export class Notifications {
 				// Skip unimportant notifications
 				if (!Object.keys(notifTypes).includes(item.type)) continue;
 
+				const username = usernameMap[uid.toString()].name;
+				let avatar = usernameMap[uid.toString()].avatar.i;
+
+				if (avatar === undefined) {
+					avatar = 'https://via.placeholder.com/150/7bc8a4/?text=%20';
+				} else {
+					avatar = 'https://avatars.devrant.com/' + avatar;
+				}
+
+				const embed = {
+					title:  `_**${username}** ${notifTypes[item.type]}_`,
+					url:    'https://devrant.com/rants/' + item.rant_id,
+					color:  16357990,
+					footer: {
+						icon_url: 'https://upload.wikimedia.org/wikipedia/commons/1/1f/DevRant_Logo.jpg',
+						text:     'devRant'
+					},
+					author: {
+						name:     username,
+						url:      'https://devrant.com/users/' + username,
+						icon_url: avatar
+					}
+				};
+
 				this.discordClient
 				    .channels
 				    .get(this.notifChannelID)
-				    .send(`_**${username}** ${notifTypes[item.type]}_       >       https://devrant.com/rants/${item.rant_id}`).catch(console.error);
+				    .send({ embed }).catch(console.error);
 			}
 
 			this.devRantClient.clearNotifications(this.devRantToken);
