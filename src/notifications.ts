@@ -45,7 +45,7 @@ export class Notifications {
 				}
 
 				const embed = {
-					title:  `_**${username}** ${notifTypes[item.type]}_`,
+					title:  `${username} ${notifTypes[item.type]}`,
 					url:    'https://devrant.com/rants/' + item.rant_id,
 					color:  16357990,
 					footer: {

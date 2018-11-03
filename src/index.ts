@@ -27,19 +27,48 @@ var devRantToken: object = {};
 var notifications: Notifications;
 
 function helpText (queue) {
-	return `
-**devNews Bot Commands Help:**
-!publish - Add current article to the waitlist.
-!length - The amount of unpublished news articles.
-!show <n | current> - Show Article with index n-1 or the current one.
-!tags <tag1> <tag2> <tags...> - Add tags to the current article.
-!reset - Delete the current article. (text, tags)
-!signature <signature ...> - Set your own signature that gets posted as a comment on every of your posts.
-!help - Show this help message.
-
-Re-try / Post frequency: ${env.POST_FREQUENCY || 10} minutes.
-Articles in queue: ${queue.length} (max: 10).
-`;
+	return {embed: {
+		title: "devNews-Bot Command Help",
+		description: "**Writing a post:**\nWrite your posts in #draft. The bot won't disturb you there and also you can edit everything before posting!\n\n**Publishing a post:**\nTo publish a post, copy/paste everything in the correct order from #draft to #releases. The bot should send some feedback. (If not contact @Skayo)",
+		color: 14962512,
+		fields: [
+			{
+				name: "!help",
+				value: "Show this message."
+			},
+			{
+				name: "!publish",
+				value: "Add the current post to the release-queue. Afterwards it will be published to devRant as soon as possible! (The post can't be edited after you execute this command)"
+			},
+			{
+				name: "!image",
+				value: "Attach an image to your current post. Can also be a GIF."
+			},
+			{
+				name: "!tags <tag1>, <tag2>, <...>",
+				value: "Add some tags to your current post."
+			},
+			{
+				name: "!reset",
+				value: "Delete your current post. Removes all text, images and tags."
+			},
+			{
+				name: "!length",
+				value: "Show the amount of posts in the release-queue."
+			},
+			{
+				name: "!show <n | current>",
+				value: "Show a post in the release-queue or the current one."
+			},
+			{
+				name: "!signature <signature text>",
+				value: "Set your own signature that gets posted as a comment on every of your posts. (Use 'u:' instead of '@' if you want to mention a devRant user)"
+			}
+		],
+		footer: {
+			text: `Try-to-post frequenzy: ${env.POST_FREQUENCY || 10} | Posts in release-queue: ${queue.length} (max: 10)`
+		}
+	}};
 }
 
 
@@ -276,14 +305,19 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 			break;
 
 		case 'help':
-			msg.reply(helpText(queue));
+			if (!msg.author.dmChannel) {
+				msg.author.createDM().then((dmChannel) => {
+					dmChannel.send(helpText(queue));
+				});
+			} else {
+				msg.author.dmChannel.send(helpText(queue));
+			}
 			break;
 
 		default:
-			msg.reply(`Unknown command. \`${cmdPrefix}help\` for more help.`);
+			msg.reply(`Unknown command. \`${cmdPrefix}help\` for a list of available commands.`);
 
 	}
-
 }
 
 function tryPost () {
