@@ -9,7 +9,7 @@ if (process.platform !== 'win32') {
 const fsext = [
   // 'ts',
   'js',
-  'json',
+  //'json',
   'yml',
   'env'
 ];
