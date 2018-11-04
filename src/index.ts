@@ -33,35 +33,35 @@ function helpText (queue) {
 		color: 14962512,
 		fields: [
 			{
-				name: "!help",
+				name: cmdPrefix + "help",
 				value: "Show this message."
 			},
 			{
-				name: "!publish",
+				name: cmdPrefix + "publish",
 				value: "Add the current post to the release-queue. Afterwards it will be published to devRant as soon as possible! (The post can't be edited after you execute this command)"
 			},
 			{
-				name: "!image",
+				name: cmdPrefix + "image",
 				value: "Attach an image to your current post. Can also be a GIF."
 			},
 			{
-				name: "!tags <tag1>, <tag2>, <...>",
+				name: cmdPrefix + "tags <tag1>, <tag2>, <...>",
 				value: "Add some tags to your current post. Example: `!tags github, feature, this is a tag`"
 			},
 			{
-				name: "!reset",
+				name: cmdPrefix + "reset",
 				value: "Delete your current post. Removes all text, images and tags."
 			},
 			{
-				name: "!length",
+				name: cmdPrefix + "length",
 				value: "Show the amount of posts in the release-queue."
 			},
 			{
-				name: "!show <n | current>",
+				name: cmdPrefix + "show <n | current>",
 				value: "Show a post in the release-queue or the current one."
 			},
 			{
-				name: "!signature <signature text>",
+				name: cmdPrefix + "signature <signature text>",
 				value: "Set your own signature that gets posted as a comment on every of your posts. (Use 'u:' instead of '@' if you want to mention a devRant user)"
 			}
 		],
@@ -127,7 +127,7 @@ client.on('message', msg => {
 					  .set('newPost.text', msg.content)
 					  .write();
 
-					msg.reply(`new post created!\nAdd tags with \`${cmdPrefix}tags <tag1> <tag2>...\`\nAttach an image with \`${cmdPrefix}image\`\nPost to devRant with \`${cmdPrefix}publish\``);
+					msg.reply(`new post created!\nAdd tags with \`${cmdPrefix}tags <tag1>, <tag2>, <...>\`\nAttach an image with \`${cmdPrefix}image\`\nPost to devRant with \`${cmdPrefix}publish\``);
 				} else {
 					db.get('users')
 					  .find({ id: user.id })
