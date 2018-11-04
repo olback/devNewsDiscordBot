@@ -46,7 +46,7 @@ function helpText (queue) {
 			},
 			{
 				name: "!tags <tag1>, <tag2>, <...>",
-				value: "Add some tags to your current post."
+				value: "Add some tags to your current post. Example: `!tags github, feature, this is a tag`"
 			},
 			{
 				name: "!reset",
