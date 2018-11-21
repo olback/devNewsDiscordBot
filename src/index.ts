@@ -27,48 +27,50 @@ var devRantToken: object = {};
 var notifications: Notifications;
 
 function helpText (queue) {
-	return {embed: {
-		title: "devNews-Bot Command Help",
-		description: "**Writing a post:**\nWrite your posts in #draft. The bot won't disturb you there and also you can edit everything before posting!\n\n**Publishing a post:**\nTo publish a post, copy/paste everything in the correct order from #draft to #releases. The bot should send some feedback. (If not contact @Skayo)",
-		color: 14962512,
-		fields: [
-			{
-				name: cmdPrefix + "help",
-				value: "Show this message."
-			},
-			{
-				name: cmdPrefix + "publish",
-				value: "Add the current post to the release-queue. Afterwards it will be published to devRant as soon as possible! (The post can't be edited after you execute this command)"
-			},
-			{
-				name: cmdPrefix + "image",
-				value: "Attach an image to your current post. Can also be a GIF."
-			},
-			{
-				name: cmdPrefix + "tags <tag1>, <tag2>, <...>",
-				value: "Add some tags to your current post. Example: `!tags github, feature, this is a tag`"
-			},
-			{
-				name: cmdPrefix + "reset",
-				value: "Delete your current post. Removes all text, images and tags."
-			},
-			{
-				name: cmdPrefix + "length",
-				value: "Show the amount of posts in the release-queue."
-			},
-			{
-				name: cmdPrefix + "show <n | current>",
-				value: "Show a post in the release-queue or the current one."
-			},
-			{
-				name: cmdPrefix + "signature <signature text>",
-				value: "Set your own signature that gets posted as a comment on every of your posts. (Use 'u:' instead of '@' if you want to mention a devRant user)"
+	return {
+		embed: {
+			title:       'devNews-Bot Command Help',
+			description: '**Writing a post:**\nWrite your posts in #draft. The bot won\'t disturb you there and also you can edit everything before posting!\n\n**Publishing a post:**\nTo publish a post, copy/paste everything in the correct order from #draft to #releases. The bot should send some feedback. (If not contact @Skayo)',
+			color:       14962512,
+			fields:      [
+				{
+					name:  cmdPrefix + 'help',
+					value: 'Show this message.'
+				},
+				{
+					name:  cmdPrefix + 'publish',
+					value: 'Add the current post to the release-queue. Afterwards it will be published to devRant as soon as possible! (The post can\'t be edited after you execute this command)'
+				},
+				{
+					name:  cmdPrefix + 'image',
+					value: 'Attach an image to your current post. Can also be a GIF.'
+				},
+				{
+					name:  cmdPrefix + 'tags <tag1>, <tag2>, <...>',
+					value: 'Add some tags to your current post. Example: `!tags github, feature, this is a tag`'
+				},
+				{
+					name:  cmdPrefix + 'reset',
+					value: 'Delete your current post. Removes all text, images and tags.'
+				},
+				{
+					name:  cmdPrefix + 'length',
+					value: 'Show the amount of posts in the release-queue.'
+				},
+				{
+					name:  cmdPrefix + 'show <n | current>',
+					value: 'Show a post in the release-queue or the current one.'
+				},
+				{
+					name:  cmdPrefix + 'signature <signature text>',
+					value: 'Set your own signature that gets posted as a comment on every of your posts. (Use \'u:\' instead of \'@\' if you want to mention a devRant user)'
+				}
+			],
+			footer:      {
+				text: `Try-to-post frequenzy: ${env.POST_FREQUENCY || 10} | Posts in release-queue: ${queue.length} (max: 10)`
 			}
-		],
-		footer: {
-			text: `Try-to-post frequenzy: ${env.POST_FREQUENCY || 10} | Posts in release-queue: ${queue.length} (max: 10)`
 		}
-	}};
+	};
 }
 
 
@@ -94,56 +96,66 @@ client.on('messageUpdate', (_msg, newMsg) => {
 });
 */
 
+function isReleaseChannel (msg) {
+	return (msg.channel.id === env.RELEASE_CHANNEL_ID);
+}
+
 client.on('message', msg => {
-	if (msg.channel.id === env.RELEASE_CHANNEL_ID && msg.type == 'DEFAULT') {
+	if (msg.type != 'DEFAULT') {
+		// If message is for example a pin message, not a normal one, ignore it
+		return;
+	}
 
-		if (msg.author.bot || msg.content.startsWith('!-')) {
-			// If message posted by bot or if it starts with '!-', then ignore it
-			return;
-		}
+	if (msg.author.bot || msg.content.startsWith('!-')) {
+		// If message posted by bot or if it starts with '!-', then ignore it
+		return;
+	}
 
-		if (msg.content.toLowerCase().startsWith(cmdPrefix)) {
+	if (!client.guilds.find('name', 'devNews').roles.find('name', 'Author').members.find('id', msg.author.id)) {
+		// Only Authors are allowed to use the bot.
+		return;
+	}
 
-			let message = msg.content.substr(cmdPrefix.length); // Remove command prefix from message
-			let msgParts = message.split(' ');
+	if (msg.content.toLowerCase().startsWith(cmdPrefix)) {
 
-			// Handle commands here
-			const cmd = msgParts[0];
-			const args = msgParts.splice(1);
-			const rawArgs = message.substr(cmd.length).trim(); // All arguments but not split
+		let message = msg.content.substr(cmdPrefix.length); // Remove command prefix from message
+		let msgParts = message.split(' ');
 
-			command(cmd, args, rawArgs, msg);
+		// Handle commands here
+		const cmd = msgParts[0];
+		const args = msgParts.splice(1);
+		const rawArgs = message.substr(cmd.length).trim(); // All arguments but not split
 
-		} else {
+		command(cmd, args, rawArgs, msg);
 
-			if (msg.content.length >= Number(env.MIN_POST_LENGTH) && msg.content.length <= Number(env.MAX_POST_LENGTH)) {
+	} else if (isReleaseChannel(msg)) {
 
-				const user = getUser(msg);
+		if (msg.content.length >= Number(env.MIN_POST_LENGTH) && msg.content.length <= Number(env.MAX_POST_LENGTH)) {
 
-				if (user.newPost.text == '') {
-					db.get('users')
-					  .find({ id: user.id })
-					  .set('newPost.text', msg.content)
-					  .write();
+			const user = getUser(msg);
 
-					msg.reply(`new post created!\nAdd tags with \`${cmdPrefix}tags <tag1>, <tag2>, <...>\`\nAttach an image with \`${cmdPrefix}image\`\nPost to devRant with \`${cmdPrefix}publish\``);
-				} else {
-					db.get('users')
-					  .find({ id: user.id })
-					  .set('newPost.text', user.newPost.text + '\n\n' + msg.content)
-					  .write();
+			if (user.newPost.text == '') {
+				db.get('users')
+				  .find({ id: user.id })
+				  .set('newPost.text', msg.content)
+				  .write();
 
-					msg.reply('added text to your current post.');
-				}
+				msg.reply(`new post created!\nAdd tags with \`${cmdPrefix}tags <tag1>, <tag2>, <...>\`\nAttach an image with \`${cmdPrefix}image\`\nPost to devRant with \`${cmdPrefix}publish\``);
+			} else {
+				db.get('users')
+				  .find({ id: user.id })
+				  .set('newPost.text', user.newPost.text + '\n\n' + msg.content)
+				  .write();
 
-			} else { // Else, respond with error
+				msg.reply('added text to your current post.');
+			}
 
-				if (msg.content.length >= Number(env.MIN_POST_LENGTH)) {
-					msg.reply('this post seems a little long.');
-				} else {
-					msg.reply('this post seems a little short.');
-				}
+		} else { // Else, respond with error
 
+			if (msg.content.length >= Number(env.MIN_POST_LENGTH)) {
+				msg.reply('this post seems a little long.');
+			} else {
+				msg.reply('this post seems a little short.');
 			}
 
 		}
@@ -196,6 +208,9 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 
 	switch (cmd) {
 		case 'publish':
+			if (!isReleaseChannel(msg))
+				return;
+
 			if (queue.length > 10) {
 				msg.reply('you may not add more posts right now.\nThere are already 10 scheduled for release.');
 				return;
@@ -242,6 +257,9 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 			break;
 
 		case 'tags':
+			if (!isReleaseChannel(msg))
+				return;
+
 			if (user.newPost.text != '') {
 				const newTags = rawArgs.split(',').map(t => t.trim());
 
@@ -257,6 +275,9 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 			break;
 
 		case 'image':
+			if (!isReleaseChannel(msg))
+				return;
+
 			if (user.newPost.text != '') {
 				if (msg.attachments.array().length > 0) {
 					console.log(msg.attachments.array()[0].url);
@@ -276,6 +297,9 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 			break;
 
 		case 'reset':
+			if (!isReleaseChannel(msg))
+				return;
+
 			clearPost(user);
 
 			msg.reply('current post deleted.');
