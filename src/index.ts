@@ -95,8 +95,7 @@ client.on('messageUpdate', (_msg, newMsg) => {
 */
 
 client.on('message', msg => {
-
-	if (msg.channel.id === env.RELEASE_CHANNEL_ID) {
+	if (msg.channel.id === env.RELEASE_CHANNEL_ID && msg.type == 'DEFAULT') {
 
 		if (msg.author.bot || msg.content.startsWith('!-')) {
 			// If message posted by bot or if it starts with '!-', then ignore it
