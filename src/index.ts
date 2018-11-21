@@ -111,7 +111,14 @@ client.on('message', msg => {
 		return;
 	}
 
-	if (!client.guilds.find('name', 'devNews').roles.find('name', 'Author').members.find('id', msg.author.id)) {
+	if (
+		!client.guilds
+		       .find(guild => guild.name === 'devNews')
+		       .roles
+		       .find(role => role.name === 'Author')
+		       .members
+		       .find(member => member.id === msg.author.id)
+	) {
 		// Only Authors are allowed to use the bot.
 		return;
 	}
@@ -240,14 +247,19 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 		case 'show':
 			if (args[0] === 'current' && user.newPost.text != '') {
 
-				msg.reply(`as requested, here is your current post:\n\`\`\`${user.newPost.text}\n------\nTags: ${user.newPost.tags.join(', ')}\nImage: ${user.newPost.image}\`\`\``);
-
+				msg.reply('as requested, here is your current post:');
+				msg.channel.send('```' + user.newPost.text + '```', { split: { prepend: '```', append: '```' } }).then(() => {
+					msg.channel.send(`-------\n\`\`\`Tags: ${user.newPost.tags.join(', ')}\nImage: ${user.newPost.image}\nCharacters: ${user.newPost.text.length}\`\`\``);
+				});
 			} else {
 				const post = queue[Number(args[0]) - 1];
 
 				if (post) {
 					client.fetchUser(post.userID).then(user => {
-						msg.reply(`as requested, here is post #${Number(args[0])}:\n\`\`\`${post.text}\n------\nAuthor: @${user.username}\nTags: ${post.tags.join(', ')}\nImage: ${post.image}\`\`\``);
+						msg.reply(`as requested, here is post #${Number(args[0])}:`);
+						msg.channel.send('```' + post.text + '```', { split: { prepend: '```', append: '```' } }).then(() => {
+							msg.channel.send(`-------\n\`\`\`Author: @${user.username}\nTags: ${post.tags.join(', ')}\nImage: ${post.image}\nCharacters: ${post.text.length}\`\`\``);
+						});
 					});
 				} else {
 					msg.reply('post does not exist.');
