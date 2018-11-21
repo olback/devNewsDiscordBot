@@ -361,6 +361,7 @@ function tryPost () {
 	if (queue.length > 0) {
 		const post = queue[0];
 
+		// @ts-ignore
 		const channel: Discord.TextChannel = client.channels.get(env.RELEASE_CHANNEL_ID || '');
 
 		if (channel === undefined) {
