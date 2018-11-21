@@ -66,6 +66,8 @@ export class Notifications {
 			}
 
 			this.devRantClient.clearNotifications(this.devRantToken);
+		}).catch(() => {
+			console.error('Unable to get notifications!');
 		});
 	}
 }
