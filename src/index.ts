@@ -250,7 +250,7 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 				msg.reply('as requested, here is your current post:');
 				msg.channel.send('```' + user.newPost.text + '```', { split: { prepend: '```', append: '```' } }).then(() => {
 					msg.channel.send(`-------\n\`\`\`Tags: ${user.newPost.tags.join(', ')}\nImage: ${user.newPost.image}\nCharacters: ${user.newPost.text.length}\`\`\``);
-				});
+				}).catch(console.error);
 			} else {
 				const post = queue[Number(args[0]) - 1];
 
@@ -259,8 +259,8 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 						msg.reply(`as requested, here is post #${Number(args[0])}:`);
 						msg.channel.send('```' + post.text + '```', { split: { prepend: '```', append: '```' } }).then(() => {
 							msg.channel.send(`-------\n\`\`\`Author: @${user.username}\nTags: ${post.tags.join(', ')}\nImage: ${post.image}\nCharacters: ${post.text.length}\`\`\``);
-						});
-					});
+						}).catch(console.error);
+					}).catch(console.error);
 				} else {
 					msg.reply('post does not exist.');
 				}
@@ -343,7 +343,7 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 			if (!msg.author.dmChannel) {
 				msg.author.createDM().then((dmChannel) => {
 					dmChannel.send(helpText(queue));
-				});
+				}).catch(console.error);
 			} else {
 				msg.author.dmChannel.send(helpText(queue));
 			}
