@@ -7,6 +7,7 @@ import * as lowdb from 'lowdb';
 import * as FileSync from 'lowdb/adapters/FileSync';
 import * as download from 'download-to-file';
 import { Notifications } from './notifications';
+import { Welcomer } from './welcomer';
 
 dotenv.load({ path: '.env' }); // Load .env
 
@@ -25,6 +26,7 @@ db.defaults({ users: [], queue: [] })
 
 var devRantToken: object = {};
 var notifications: Notifications;
+var welcomer: Welcomer;
 
 function helpText (queue) {
 	return {
@@ -449,6 +451,7 @@ devRant.login(
 	devRantToken = tokenData.auth_token;
 
 	notifications = new Notifications(client, devRant, devRantToken, env.NOTIF_CHANNEL_ID);
+	welcomer = new Welcomer(client, env.WELCOME_CHANNEL_ID);
 
 	// Check for notifications
 	setInterval(() => notifications.check(), Number(env.NOTIF_FREQUENCY || 10) * 1000);
