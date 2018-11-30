@@ -34,9 +34,6 @@ export class Welcomer {
 	constructor (discordClient, welcomeChannelID) {
 		this.discordClient = discordClient;
 		this.welcomeChannelID = welcomeChannelID;
-
-		// Listen for new members
-		discordClient.on('guildMemberAdd', member => this.sendWelcomeMessage(member));
 	}
 
 	sendWelcomeMessage (member) {

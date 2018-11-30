@@ -456,6 +456,9 @@ devRant.login(
 	// Check for notifications
 	setInterval(() => notifications.check(), Number(env.NOTIF_FREQUENCY || 10) * 1000);
 
+	// Listen for new members
+	client.on('guildMemberAdd', member => welcomer.sendWelcomeMessage(member));
+
 	client.login(env.DISCORD_TOKEN)
 	      .then(() => {
 		      tryPost();
