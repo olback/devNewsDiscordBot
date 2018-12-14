@@ -1,3 +1,4 @@
+import { DMChannel, TextChannel } from 'discord.js';
 import * as fs from 'fs';
 import { env } from 'process';
 import * as dotenv from 'dotenv';
@@ -102,6 +103,14 @@ function isReleaseChannel (msg) {
 	return (msg.channel.id === env.RELEASE_CHANNEL_ID);
 }
 
+function reply(msg, text) {
+	if (msg.channel instanceof TextChannel) {
+		msg.reply(text);
+	} else {
+		msg.channel.send(text.charAt(0).toUpperCase() + text.slice(1));
+	}
+}
+
 client.on('message', msg => {
 	if (msg.type != 'DEFAULT') {
 		// If message is for example a pin message, not a normal one, ignore it
@@ -149,22 +158,22 @@ client.on('message', msg => {
 				  .set('newPost.text', msg.content)
 				  .write();
 
-				msg.reply(`new post created!\nAdd tags with \`${cmdPrefix}tags <tag1>, <tag2>, <...>\`\nAttach an image with \`${cmdPrefix}image\`\nPost to devRant with \`${cmdPrefix}publish\``);
+				reply(msg, `new post created!\nAdd tags with \`${cmdPrefix}tags <tag1>, <tag2>, <...>\`\nAttach an image with \`${cmdPrefix}image\`\nPost to devRant with \`${cmdPrefix}publish\``);
 			} else {
 				db.get('users')
 				  .find({ id: user.id })
 				  .set('newPost.text', user.newPost.text + '\n\n' + msg.content)
 				  .write();
 
-				msg.reply('added text to your current post.');
+				reply(msg, 'added text to your current post.');
 			}
 
 		} else { // Else, respond with error
 
 			if (msg.content.length >= Number(env.MIN_POST_LENGTH)) {
-				msg.reply('this post seems a little long.');
+				reply(msg, 'this post seems a little long.');
 			} else {
-				msg.reply('this post seems a little short.');
+				reply(msg, 'this post seems a little short.');
 			}
 
 		}
@@ -221,7 +230,7 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 				return;
 
 			if (queue.length > 10) {
-				msg.reply('you may not add more posts right now.\nThere are already 10 scheduled for release.');
+				reply(msg, 'you may not add more posts right now.\nThere are already 10 scheduled for release.');
 				return;
 			}
 
@@ -232,24 +241,24 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 				  .push(user.newPost)
 				  .write();
 
-				msg.reply(`"${user.newPost.text.substring(0, 15)}..." has been added to the release-queue.`);
+				reply(msg, `"${user.newPost.text.substring(0, 15)}..." has been added to the release-queue.`);
 
 				clearPost(user);
 
 				tryPost(); // Try to post it
 			} else {
-				msg.reply('you don\'t have a post to publish.');
+				reply(msg, 'you don\'t have a post to publish.');
 			}
 			break;
 
 		case 'length':
-			msg.reply(`there are currently **${queue.length}** post(s) waiting to be published to devRant.`);
+			reply(msg, `there are currently **${queue.length}** post(s) waiting to be published to devRant.`);
 			break;
 
 		case 'show':
 			if (args[0] === 'current' && user.newPost.text != '') {
 
-				msg.reply('as requested, here is your current post:');
+				reply(msg, 'as requested, here is your current post:');
 				msg.channel.send('```' + user.newPost.text + '```', { split: { prepend: '```', append: '```' } }).then(() => {
 					msg.channel.send(`-------\n\`\`\`Tags: ${user.newPost.tags.join(', ')}\nImage: ${user.newPost.image}\nCharacters: ${user.newPost.text.length}\`\`\``);
 				}).catch(console.error);
@@ -258,13 +267,13 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 
 				if (post) {
 					client.fetchUser(post.userID).then(user => {
-						msg.reply(`as requested, here is post #${Number(args[0])}:`);
+						reply(msg, `as requested, here is post #${Number(args[0])}:`);
 						msg.channel.send('```' + post.text + '```', { split: { prepend: '```', append: '```' } }).then(() => {
 							msg.channel.send(`-------\n\`\`\`Author: @${user.username}\nTags: ${post.tags.join(', ')}\nImage: ${post.image}\nCharacters: ${post.text.length}\`\`\``);
 						}).catch(console.error);
 					}).catch(console.error);
 				} else {
-					msg.reply('post does not exist.');
+					reply(msg, 'post does not exist.');
 				}
 
 			}
@@ -282,9 +291,9 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 				  .set('newPost.tags', newTags)
 				  .write();
 
-				msg.reply(`added tags: \`${newTags.join(', ')}\``);
+				reply(msg, `added tags: \`${newTags.join(', ')}\``);
 			} else {
-				msg.reply('there is no post to add tags to.');
+				reply(msg, 'there is no post to add tags to.');
 			}
 			break;
 
@@ -301,12 +310,12 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 					  .set('newPost.image', msg.attachments.array()[0].url)
 					  .write();
 
-					msg.reply('attached image.');
+					reply(msg, 'attached image.');
 				} else {
-					msg.reply('no image attatched.');
+					reply(msg, 'no image attatched.');
 				}
 			} else {
-				msg.reply('there is no post to attach the image to.');
+				reply(msg, 'there is no post to attach the image to.');
 			}
 			break;
 
@@ -316,7 +325,7 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 
 			clearPost(user);
 
-			msg.reply('current post deleted.');
+			reply(msg, 'current post deleted.');
 			break;
 
 		case 'signature':
@@ -331,19 +340,19 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 				  .set('signature', newSignature)
 				  .write();
 
-				msg.reply(`set signature to:\n\`\`\`${newSignature}\`\`\``);
+				reply(msg, `set signature to:\n\`\`\`${newSignature}\`\`\``);
 			} else {
 				if (user.signature != '') {
-					msg.reply(`your current signature:\n\`\`\`${user.signature}\`\`\``);
+					reply(msg, `your current signature:\n\`\`\`${user.signature}\`\`\``);
 				} else {
-					msg.reply('you didn\'t set a signature yet!');
+					reply(msg, 'you didn\'t set a signature yet!');
 				}
 			}
 			break;
 
 		case 'help':
 			if (!msg.author.dmChannel) {
-				msg.author.createDM().then((dmChannel) => {
+				msg.author.createDM().then((dmChannel: DMChannel) => {
 					dmChannel.send(helpText(queue));
 				}).catch(console.error);
 			} else {
@@ -352,7 +361,7 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 			break;
 
 		default:
-			msg.reply(`Unknown command. \`${cmdPrefix}help\` for a list of available commands.`);
+			reply(msg, `Unknown command. \`${cmdPrefix}help\` for a list of available commands.`);
 
 	}
 }
