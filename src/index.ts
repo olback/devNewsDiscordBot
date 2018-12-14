@@ -103,7 +103,7 @@ function isReleaseChannel (msg) {
 	return (msg.channel.id === env.RELEASE_CHANNEL_ID);
 }
 
-function reply(msg, text) {
+function reply (msg, text) {
 	if (msg.channel instanceof TextChannel) {
 		msg.reply(text);
 	} else {
@@ -448,8 +448,10 @@ function postSignature (userID, rantID) {
 		.get('signature')
 		.value();
 
-	devRant.postComment(signature, rantID, devRantToken)
-	       .catch(console.error);
+	if (signature !== '') {
+		devRant.postComment(signature, rantID, devRantToken)
+		       .catch(console.error);
+	}
 }
 
 // Login to devRant and connect to Discord
