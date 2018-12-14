@@ -192,6 +192,7 @@ function getUser (msg) {
 		user = {
 			id:        msg.author.id,
 			signature: '',
+			posts:     [],
 			newPost:   {
 				text:  '',
 				image: '',
@@ -235,7 +236,7 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 			}
 
 			if (user.newPost.text != '') {
-				if(user.newPost.text.length < 5000) {
+				if (user.newPost.text.length < 5000) {
 					user.newPost.userID = user.id; // Add user ID to newPost so we know who made this post once in the queue
 
 					db.get('queue')
@@ -354,6 +355,12 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 			}
 			break;
 
+		case 'stats':
+			getUserStats(user, stats => {
+				reply(msg, `here are your statistics:\n> **Articles written:** ${stats.articlesCount}\n> **Score of all your posts summed:** ${stats.scoreSum}++\n> **Your best article:** https://devrant.com/rants/${stats.bestPost.id}  *(${stats.bestPost.score}++'s)*\n> **Your "worst" article:** https://devrant.com/rants/${stats.worstPost.id}  *(${stats.worstPost.score}++'s)*`);
+			});
+			break;
+
 		case 'help':
 			if (!msg.author.dmChannel) {
 				msg.author.createDM().then((dmChannel: DMChannel) => {
@@ -368,6 +375,49 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 			reply(msg, `Unknown command. \`${cmdPrefix}help\` for a list of available commands.`);
 
 	}
+}
+
+function getUserStats (user, callback) {
+	const posts = user.posts;
+
+	// Use search because there is no result limit
+	devRant
+		.search('devNews')
+		.then(results => {
+			let scoreSum = 0;
+			let bestPost = {
+				score: 0,
+				id:    0
+			};
+			let worstPost = {
+				score: -1,
+				id:    0
+			};
+
+			results.forEach(rant => {
+				if (posts.includes(rant.id)) {
+					console.log(rant);
+					scoreSum += rant.score;
+
+					if (rant.score > bestPost.score) {
+						bestPost.score = rant.score;
+						bestPost.id = rant.id;
+					}
+
+					if (rant.score < worstPost.score || worstPost.score == -1) {
+						worstPost.score = rant.score;
+						worstPost.id = rant.id;
+					}
+				}
+			});
+
+			callback({
+				articlesCount: posts.length,
+				scoreSum,
+				bestPost,
+				worstPost
+			});
+		}).catch(console.error);
 }
 
 function tryPost () {
@@ -403,6 +453,12 @@ function tryPost () {
 					       .catch(console.error);
 
 					postSignature(post.userID, postData.rant_id);
+
+					db.get('users')
+					  .find({ id: post.userID })
+					  .get('posts')
+					  .push(postData.rant_id)
+					  .write();
 				} else if (post.text.length > 5000) {
 					db.get('queue')
 					  .shift()
