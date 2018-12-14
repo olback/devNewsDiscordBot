@@ -235,17 +235,21 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 			}
 
 			if (user.newPost.text != '') {
-				user.newPost.userID = user.id; // Add user ID to newPost so we know who made this post once in the queue
+				if(user.newPost.text.length < 5000) {
+					user.newPost.userID = user.id; // Add user ID to newPost so we know who made this post once in the queue
 
-				db.get('queue')
-				  .push(user.newPost)
-				  .write();
+					db.get('queue')
+					  .push(user.newPost)
+					  .write();
 
-				reply(msg, `"${user.newPost.text.substring(0, 15)}..." has been added to the release-queue.`);
+					reply(msg, `"${user.newPost.text.substring(0, 15)}..." has been added to the release-queue.`);
 
-				clearPost(user);
+					clearPost(user);
 
-				tryPost(); // Try to post it
+					tryPost(); // Try to post it
+				} else {
+					reply(msg, 'your post is longer than 5000 characters!\nPlease write to @Skayo to post it manually, or shorten it down!');
+				}
 			} else {
 				reply(msg, 'you don\'t have a post to publish.');
 			}
@@ -399,6 +403,13 @@ function tryPost () {
 					       .catch(console.error);
 
 					postSignature(post.userID, postData.rant_id);
+				} else if (post.text.length > 5000) {
+					db.get('queue')
+					  .shift()
+					  .write();
+
+					channel.send('Post is longer than 5000 characters!\nPlease write to @Skayo to post it manually, or shorten it down!')
+					       .catch(console.error);
 				} else if (!postData.error.startsWith('Right now you can only add')) {
 					db.get('queue')
 					  .shift()
