@@ -422,7 +422,29 @@ function getUserStats (user, callback) {
 						worstPost.score = rant.score;
 						worstPost.id = rant.id;
 					}
+
+					posts.filter(rantID => rantID != rant.id); // Remove rant ID from list
 				}
+			});
+
+			// Go through each remaining ID (there shouldn't be any)
+			posts.forEach(rantID => {
+				// Fetch rant and update stats
+				devRant
+					.rant(rantID)
+					.then(rant => {
+						scoreSum += rant.score;
+
+						if (rant.score > bestPost.score) {
+							bestPost.score = rant.score;
+							bestPost.id = rant.id;
+						}
+
+						if (rant.score < worstPost.score || worstPost.score == -1) {
+							worstPost.score = rant.score;
+							worstPost.id = rant.id;
+						}
+					})
 			});
 
 			callback({
