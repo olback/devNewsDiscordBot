@@ -67,6 +67,10 @@ function helpText (queue) {
 				{
 					name:  cmdPrefix + 'signature <signature text>',
 					value: 'Set your own signature that gets posted as a comment on every of your posts. (Use \'u:\' instead of \'@\' if you want to mention a devRant user)'
+				},
+				{
+					name:  cmdPrefix + 'stats',
+					value: 'Show statistics like how many posts you\'ve written or what your best article is.'
 				}
 			],
 			footer:      {
