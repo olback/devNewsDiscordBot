@@ -357,7 +357,11 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 
 		case 'stats':
 			getUserStats(user, stats => {
-				reply(msg, `here are your statistics:\n> **Articles written:** ${stats.articlesCount}\n> **Score of all your posts summed:** ${stats.scoreSum}++\n> **Your best article:** https://devrant.com/rants/${stats.bestPost.id}  *(${stats.bestPost.score}++'s)*\n> **Your "worst" article:** https://devrant.com/rants/${stats.worstPost.id}  *(${stats.worstPost.score}++'s)*`);
+				if (stats.articlesCount > 0) {
+					reply(msg, `here are your statistics:\n> **Articles written:** ${stats.articlesCount}\n> **Score of all your posts summed:** ${stats.scoreSum}++\n> **Your best article:** https://devrant.com/rants/${stats.bestPost.id}  *(${stats.bestPost.score}++'s)*\n> **Your "worst" article:** https://devrant.com/rants/${stats.worstPost.id}  *(${stats.worstPost.score}++'s)*`);
+				} else {
+					reply(msg, `here are your statistics:\n> **Articles written:** 0\n> **Score of all your posts summed:** 0\n> **Your best article:** -\n> **Your "worst" article:** -`);
+				}
 			});
 			break;
 
@@ -380,6 +384,13 @@ function command (cmd: string, args: string[], rawArgs: string, msg: Discord.Mes
 function getUserStats (user, callback) {
 	const posts = user.posts;
 
+	if (posts.length == 0) {
+		callback({
+			articlesCount: 0
+		});
+		return;
+	}
+
 	// Use search because there is no result limit
 	devRant
 		.search('devNews')
@@ -396,7 +407,6 @@ function getUserStats (user, callback) {
 
 			results.forEach(rant => {
 				if (posts.includes(rant.id)) {
-					console.log(rant);
 					scoreSum += rant.score;
 
 					if (rant.score > bestPost.score) {
